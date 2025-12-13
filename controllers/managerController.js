@@ -23,78 +23,73 @@ export const updateLeaveStatus = async (req, res) => {
     if (!leave) return res.status(404).json({ message: "Leave not found" });
 
     if (leave.status !== "pending") {
-      return res.status(400).json({ message: "Leave request already processed" });
+      return res
+        .status(400)
+        .json({ message: "Leave request already processed" });
     }
 
-    const requestedDays = Math.round(
-      (new Date(leave.endDate) - new Date(leave.startDate)) / (1000 * 60 * 60 * 24)
-    ) + 1;
+    const requestedDays =
+      Math.round(
+        (new Date(leave.endDate) - new Date(leave.startDate)) /
+          (1000 * 60 * 60 * 24)
+      ) + 1;
 
     if (requestedDays <= 0) {
       return res.status(400).json({ message: "Invalid leave duration" });
     }
 
     if (action === "approve") {
-      const user = await User.findById(leave.employee._id);
-
       const PAID_TYPES = ["sick", "casual", "paid", "vacation"];
       const DEFAULT_ALLOC = { sick: 7, casual: 8, paid: 3, vacation: 2 };
 
       if (PAID_TYPES.includes(leave.leaveType)) {
         const approved = await LeaveRequest.aggregate([
-          { $match: { employee: user._id, status: 'approved', leaveType: leave.leaveType } },
+          {
+            $match: {
+              employee: leave.employee._id,
+              status: "approved",
+              leaveType: leave.leaveType,
+            },
+          },
           {
             $group: {
               _id: null,
               totalDays: {
-                $sum: { $add: [ { $dateDiff: { startDate: '$startDate', endDate: '$endDate', unit: 'day' } }, 1 ] }
-              }
-            }
-          }
+                $sum: {
+                  $add: [
+                    {
+                      $dateDiff: {
+                        startDate: "$startDate",
+                        endDate: "$endDate",
+                        unit: "day",
+                      },
+                    },
+                    1,
+                  ],
+                },
+              },
+            },
+          },
         ]);
+
         const usedDays = approved[0]?.totalDays || 0;
-
-        const pending = await LeaveRequest.aggregate([
-          { $match: {
-            employee: user._id,
-            status: 'pending',
-            leaveType: leave.leaveType,
-            _id: { $ne: leave._id }
-          }},
-          {
-            $group: {
-              _id: null,
-              totalDays: {
-                $sum: { $add: [ { $dateDiff: { startDate: '$startDate', endDate: '$endDate', unit: 'day' } }, 1 ] }
-              }
-            }
-          }
-        ]);
-        const pendingDays = pending[0]?.totalDays || 0;
-
-        const totalAllocated = DEFAULT_ALLOC[leave.leaveType] || 0;
-        const availableBalance = totalAllocated - usedDays - pendingDays;
+        const totalAllocated = DEFAULT_ALLOC[leave.leaveType];
+        const availableBalance = totalAllocated - usedDays;
 
         if (requestedDays > availableBalance) {
           return res.status(400).json({
             message: `Cannot approve ${requestedDays} days. Only ${availableBalance} days available for ${leave.leaveType} leave.`,
           });
         }
-
-        if (!user.leaveBalances) {
-          user.leaveBalances = DEFAULT_ALLOC;
-        }
-        user.leaveBalances[leave.leaveType] = (user.leaveBalances[leave.leaveType] || totalAllocated) - requestedDays;
-        await user.save();
       }
 
       leave.status = "approved";
-    } 
-    else if (action === "reject") {
+    } else if (action === "reject") {
       leave.status = "rejected";
-    } 
-    else {
-      return res.status(400).json({ message: "Action must be approve or reject" });
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Action must be approve or reject" });
     }
 
     leave.managerComment = managerComment || "";
@@ -109,12 +104,14 @@ export const updateLeaveStatus = async (req, res) => {
 
 export const getAllEmployees = async (req, res) => {
   try {
-      const employees = await User.find({ role: "employee" }).select("name email leaveBalance leaveBalances");
-      res.json(employees);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Server error" });
-    }
+    const employees = await User.find({ role: "employee" }).select(
+      "name email leaveBalance leaveBalances"
+    );
+    res.json(employees);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const getManagerCalendarLeaves = async (req, res) => {
