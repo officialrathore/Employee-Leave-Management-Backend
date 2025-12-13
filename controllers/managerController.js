@@ -38,16 +38,53 @@ export const updateLeaveStatus = async (req, res) => {
       const user = await User.findById(leave.employee._id);
 
       const PAID_TYPES = ["sick", "casual", "paid", "vacation"];
+      const DEFAULT_ALLOC = { sick: 7, casual: 8, paid: 3, vacation: 2 };
 
       if (PAID_TYPES.includes(leave.leaveType)) {
-        const currentBalance = user.leaveBalances[leave.leaveType] || 0;
+        const approved = await LeaveRequest.aggregate([
+          { $match: { employee: user._id, status: 'approved', leaveType: leave.leaveType } },
+          {
+            $group: {
+              _id: null,
+              totalDays: {
+                $sum: { $add: [ { $dateDiff: { startDate: '$startDate', endDate: '$endDate', unit: 'day' } }, 1 ] }
+              }
+            }
+          }
+        ]);
+        const usedDays = approved[0]?.totalDays || 0;
 
-        if (requestedDays > currentBalance) {
+        const pending = await LeaveRequest.aggregate([
+          { $match: {
+            employee: user._id,
+            status: 'pending',
+            leaveType: leave.leaveType,
+            _id: { $ne: leave._id }
+          }},
+          {
+            $group: {
+              _id: null,
+              totalDays: {
+                $sum: { $add: [ { $dateDiff: { startDate: '$startDate', endDate: '$endDate', unit: 'day' } }, 1 ] }
+              }
+            }
+          }
+        ]);
+        const pendingDays = pending[0]?.totalDays || 0;
+
+        const totalAllocated = DEFAULT_ALLOC[leave.leaveType] || 0;
+        const availableBalance = totalAllocated - usedDays - pendingDays;
+
+        if (requestedDays > availableBalance) {
           return res.status(400).json({
-            message: `Cannot approve ${requestedDays} days. Only ${currentBalance} days available for ${leave.leaveType} leave.`,
+            message: `Cannot approve ${requestedDays} days. Only ${availableBalance} days available for ${leave.leaveType} leave.`,
           });
         }
-        user.leaveBalances[leave.leaveType] = currentBalance - requestedDays;
+
+        if (!user.leaveBalances) {
+          user.leaveBalances = DEFAULT_ALLOC;
+        }
+        user.leaveBalances[leave.leaveType] = (user.leaveBalances[leave.leaveType] || totalAllocated) - requestedDays;
         await user.save();
       }
 
