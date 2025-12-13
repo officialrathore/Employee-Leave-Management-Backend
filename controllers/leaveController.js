@@ -20,11 +20,9 @@ export const createLeaveRequest = async (req, res) => {
       return res.status(400).json({ message: "Past dates not allowed" });
     }
 
-    // calculate requested days
     const requestedDays =
       Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
 
-    // check overlapping
     const overlap = await LeaveRequest.findOne({
       employee: employeeId,
       status: { $in: ["pending", "approved"] },
@@ -38,7 +36,6 @@ export const createLeaveRequest = async (req, res) => {
       });
     }
 
-    // 🔥 balance check (FINAL GUARD)
     const DEFAULT_ALLOC = { sick: 7, casual: 8, paid: 3, vacation: 2 };
 
     const used = await LeaveRequest.aggregate([

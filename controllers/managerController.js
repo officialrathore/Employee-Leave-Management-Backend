@@ -26,7 +26,6 @@ export const updateLeaveStatus = async (req, res) => {
       return res.status(400).json({ message: "Leave request already processed" });
     }
 
-    // Calculate requested days
     const requestedDays = Math.round(
       (new Date(leave.endDate) - new Date(leave.startDate)) / (1000 * 60 * 60 * 24)
     ) + 1;
@@ -48,8 +47,6 @@ export const updateLeaveStatus = async (req, res) => {
             message: `Cannot approve ${requestedDays} days. Only ${currentBalance} days available for ${leave.leaveType} leave.`,
           });
         }
-
-        // Deduct requested days safely
         user.leaveBalances[leave.leaveType] = currentBalance - requestedDays;
         await user.save();
       }
