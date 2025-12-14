@@ -53,11 +53,22 @@ npm install
 
 ### Environment Setup
 
-Create a `.env` file by copying the example:
+Create a `.env` file in the backend root directory:
 
-```bash
-cp .env.example .env
+```env
+PORT=5000
+MONGO_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/leave_management?retryWrites=true&w=majority
+JWT_SECRET=your_super_secret_jwt_key_here_make_it_at_least_32_characters_long_and_random_!@#$%^&*()
+CLIENT_URL=https://leavehub.vercel.app
+CLIENT_URL_LOCAL=http://localhost:5173
 ```
+
+### Environment Variables Guide:
+- **PORT**: Server port (default: 5000)
+- **MONGO_URI**: MongoDB Atlas connection string
+- **JWT_SECRET**: Secure random string (min 32 chars)
+- **CLIENT_URL**: Production frontend URL
+- **CLIENT_URL_LOCAL**: Development frontend URL
 
 Edit the `.env` file with your actual values:
 
@@ -90,6 +101,27 @@ The API will be available at `http://localhost:5000`
 # Start production server
 npm start
 ```
+
+## 🚀 Deployment
+
+### Deploy to Render.com (Recommended)
+
+1. **Connect Repository**: Link your GitHub repository to Render
+2. **Service Type**: Select "Web Service"
+3. **Build Settings**:
+   - **Runtime**: Node.js
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+4. **Environment Variables**: Add all variables from `.env`
+5. **Deploy**: Your API will be live at `https://your-app-name.onrender.com`
+
+### Deploy to Railway/Heroku
+
+Similar setup with environment variables and build commands.
+
+### Live API
+- **Production**: [https://leavehub-backend.onrender.com/api](https://leavehub-backend.onrender.com/api)
+- **Development**: `http://localhost:5000/api`
 
 ## 📁 Project Structure
 
