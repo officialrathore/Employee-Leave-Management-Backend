@@ -120,7 +120,7 @@ npm start
 Similar setup with environment variables and build commands.
 
 ### Live API
-- **Production**: [https://leavehub-backend.onrender.com/api](https://leavehub-backend.onrender.com/api)
+- **Production**: [[https://employee-leave-management-backend.onrender.com/](https://employee-leave-management-backend.onrender.com/)]
 - **Development**: `http://localhost:5000/api`
 
 ## 📁 Project Structure
