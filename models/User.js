@@ -4,8 +4,9 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ["employee", "manager"], default: "employee" },
+    password: { type: String, required: function() { return !this.googleId; } },
+    googleId: { type: String, unique: true, sparse: true }, 
+    role: { type: String, enum: ["employee", "manager", "admin"], default: "employee" },
     leaveBalance: { type: Number, default: 20 },
     leaveBalances: {
       sick: { type: Number, default: 7 },
